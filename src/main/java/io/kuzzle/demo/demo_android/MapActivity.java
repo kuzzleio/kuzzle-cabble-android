@@ -13,6 +13,7 @@ import android.view.View;
 import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -168,11 +169,10 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
       public void onSuccess(JSONObject object) {
         switch (action) {
           case DECLINED:
-            MapController.getSingleton(MapActivity.this.getBaseContext()).onRideRefused();
             currentRide.delete();
             break;
           case ACCEPTED:
-            MapController.getSingleton(MapActivity.this.getBaseContext()).onRideAccepted(currentRide.getContent("from").toString());
+            MapController.getSingleton(MapActivity.this.getBaseContext()).onRideAccepted();
             handler.post(new Runnable() {
               @Override
               public void run() {
@@ -200,15 +200,6 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
               }
             });
             break;
-          case CANCELLED:
-            MapController.getSingleton(MapActivity.this.getBaseContext()).onRideCancelled(currentRide.getContent("from").toString());
-            handler.post(new Runnable() {
-              @Override
-              public void run() {
-                MapActivity.this.findViewById(R.id.notification).setVisibility(View.GONE);
-              }
-            });
-            break;
         }
       }
 
@@ -220,14 +211,21 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
   }
 
   private void manageResponseProposal(RideAction action, JSONObject proposal) {
+    Log.e("cabble", "action: "+action.toString());
     try {
       switch (action) {
         case DECLINED:
-          MapController.getSingleton(MapActivity.this.getBaseContext()).onRideRefused();
+          MapController.getSingleton(MapActivity.this.getBaseContext()).onRideRefused(proposal.getString("to"));
           currentRide.delete();
+          handler.post(new Runnable() {
+            @Override
+            public void run() {
+              Toast.makeText(MapActivity.this, "Proposal declined", Toast.LENGTH_LONG).show();
+            }
+          });
           break;
         case ACCEPTED:
-          MapController.getSingleton(MapActivity.this.getBaseContext()).onRideAccepted(proposal.getString("from"));
+          MapController.getSingleton(MapActivity.this.getBaseContext()).onRideAccepted();
           handler.post(new Runnable() {
             @Override
             public void run() {
@@ -238,7 +236,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
           });
           break;
         case FINISHED:
-          MapController.getSingleton(MapActivity.this.getBaseContext()).onRideFinished(proposal.getString("from").toString());
+          MapController.getSingleton(MapActivity.this.getBaseContext()).onRideFinished(proposal.getString("from"));
           handler.post(new Runnable() {
             @Override
             public void run() {
@@ -250,7 +248,8 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
           self.setContent("status", Status.IDLE);
           break;
         case CANCELLED:
-          MapController.getSingleton(MapActivity.this.getBaseContext()).onRideCancelled(proposal.getString("from").toString());
+          MapController.getSingleton(MapActivity.this.getBaseContext()).onRideCancelled(proposal.getString("from"));
+          currentRide.delete();
           handler.post(new Runnable() {
             @Override
             public void run() {
@@ -487,8 +486,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
               }
             }
           } else {
-            MapController.getSingleton(MapActivity.this.getBaseContext()).removeCandidate(object.getString("_id"));
-            userList.remove(object.getString("_id"));
+            MapController.getSingleton(MapActivity.this.getBaseContext()).hideCandidate(object.getString("_id"));
           }
         } catch (Exception e) {
           e.printStackTrace();
@@ -695,6 +693,11 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     googleMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
       @Override
       public View getInfoWindow(Marker marker) {
+        try {
+          MapController.getSingleton(MapActivity.this).hasInfoWindow(MapActivity.this.userList.get(marker.getSnippet()).getString("_id"), true);
+        } catch (JSONException e) {
+          e.printStackTrace();
+        }
         return null;
       }
 
@@ -730,6 +733,12 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
         } catch (Exception e) {
           e.printStackTrace();
         }
+      }
+    });
+    googleMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+      @Override
+      public void onMapClick(LatLng latLng) {
+        MapController.getSingleton(MapActivity.this).onMapClick();
       }
     });
   }

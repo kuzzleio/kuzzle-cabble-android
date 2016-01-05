@@ -7,7 +7,6 @@ import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
@@ -77,11 +76,15 @@ public class MapController {
       Log.e("cabble", "Creating new user: " + userId);
       addNewMarker(pos, userId, type);
     } else {
-      // Move user if location really changed
+      // Move user if location changed
       handler.post(new Runnable() {
         @Override
         public void run() {
           marker.moveMarker(pos);
+          marker.show();
+          if (marker.hasInfoWindow()) {
+            marker.showInfoWindow();
+          }
         }
       });
     }
@@ -165,6 +168,37 @@ public class MapController {
     return this;
   }
 
+  public MapController  hideCandidate(final String userId) {
+    handler.post(new Runnable() {
+      @Override
+      public void run() {
+        BlinkingMarker marker = markerList.get(userId);
+        if (marker != null) {
+          if (!marker.isInfoWindowShown()) {
+            marker.hasInfoWindow(false);
+          }
+          marker.hide();
+        }
+      }
+    });
+    return this;
+  }
+
+  public boolean hasInfoWindow(final String userId) {
+    BlinkingMarker marker = markerList.get(userId);
+    if (marker != null) {
+      return marker.hasInfoWindow();
+    }
+    return false;
+  }
+
+  public void hasInfoWindow(final String userId, boolean has) {
+    BlinkingMarker marker = markerList.get(userId);
+    if (marker != null) {
+      marker.hasInfoWindow(has);
+    }
+  }
+
   public void setMapView(GoogleMap mv) {
     this.mapView = mv;
   }
@@ -181,40 +215,24 @@ public class MapController {
     this.notificationHeaderText = notificationHeaderText;
   }
 
-  public void onRideRefused() {
+  public void onRideRefused(final String candidateId) {
     handler.post(new Runnable() {
       @Override
       public void run() {
         notificationHeader.setVisibility(View.GONE);
+        if (markerList.get(candidateId) != null) {
+          markerList.get(candidateId).hideInfoWindow();
+        }
       }
     });
   }
 
-  public void onRideAccepted(String candidateId) {
+  public void onRideAccepted() {
     handler.post(new Runnable() {
       @Override
       public void run() {
         notificationHeader.setVisibility(View.GONE);
         finishRideHeader.setVisibility(View.VISIBLE);
-      }
-    });
-  }
-
-  public void onCandidateAcceptRide(final String id) {
-    handler.post(new Runnable() {
-      @Override
-      public void run() {
-        finishRideHeader.setVisibility(View.VISIBLE);
-        markerList.get(id).startBlinking().hideInfoWindow();
-      }
-    });
-  }
-
-  public void candidateRefusedRide() {
-    handler.post(new Runnable() {
-      @Override
-      public void run() {
-        Toast.makeText(ctx, "Candidate refused the proposal.", Toast.LENGTH_LONG);
       }
     });
   }
@@ -229,6 +247,17 @@ public class MapController {
       }
     });
     return this;
+  }
+
+  public void onMapClick() {
+    handler.post(new Runnable() {
+      @Override
+      public void run() {
+        for (BlinkingMarker m : markerList.values()) {
+          m.hasInfoWindow(false);
+        }
+      }
+    });
   }
 
   public MapController  onRideCancelled(final String candidateId) {

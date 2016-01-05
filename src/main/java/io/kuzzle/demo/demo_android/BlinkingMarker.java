@@ -1,17 +1,17 @@
 package io.kuzzle.demo.demo_android;
 
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
-
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 
 public class BlinkingMarker extends android.support.v4.app.FragmentActivity {
   private final static String TAG = BlinkingMarker.class.getSimpleName();
@@ -35,6 +35,8 @@ public class BlinkingMarker extends android.support.v4.app.FragmentActivity {
   private LatLng mNewPosition;
 
   private String  snippet;
+
+  private boolean hasInfoWindow;
 
   /**
    * <p>Constructor for a blinking marker, with default frequency and fps.</p>
@@ -182,7 +184,35 @@ public class BlinkingMarker extends android.support.v4.app.FragmentActivity {
     return this;
   }
 
+  public BlinkingMarker showInfoWindow() {
+    this.mMarker.showInfoWindow();
+    return this;
+  }
+
+  public BlinkingMarker hide() {
+    this.mMarker.setVisible(false);
+    return this;
+  }
+
+  public BlinkingMarker show() {
+    this.mMarker.setVisible(true);
+    return this;
+  }
+
   public void setSnippet(String snippet) {
     this.snippet = snippet;
   }
+
+  public boolean hasInfoWindow() {
+    return hasInfoWindow;
+  }
+
+  public void hasInfoWindow(boolean has) {
+    hasInfoWindow = has;
+  }
+
+  public boolean isInfoWindowShown() {
+    return this.mMarker.isInfoWindowShown();
+  }
+
 }
