@@ -7,4 +7,4 @@ This version of cabble uses the kuzzle android SDK version 1.1.3
 
 ## License
 
-This tutorial is published under [MIT License](https://opensource.org/licenses/MIT)
+This demo is published under [MIT License](https://opensource.org/licenses/MIT)
