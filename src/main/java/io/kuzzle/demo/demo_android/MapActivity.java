@@ -1,8 +1,6 @@
 package io.kuzzle.demo.demo_android;
 
 import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.content.Intent;
 import android.location.Location;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -39,13 +37,13 @@ import io.kuzzle.demo.demo_android.enums.Status;
 import io.kuzzle.demo.demo_android.enums.UserType;
 import io.kuzzle.sdk.core.Kuzzle;
 import io.kuzzle.sdk.core.KuzzleDataCollection;
+import io.kuzzle.sdk.core.KuzzleDataMapping;
 import io.kuzzle.sdk.core.KuzzleDocument;
 import io.kuzzle.sdk.core.KuzzleOptions;
 import io.kuzzle.sdk.core.KuzzleRoom;
 import io.kuzzle.sdk.core.KuzzleRoomOptions;
 import io.kuzzle.sdk.enums.Mode;
 import io.kuzzle.sdk.enums.Users;
-import io.kuzzle.sdk.exceptions.KuzzleException;
 import io.kuzzle.sdk.listeners.ResponseListener;
 
 public class MapActivity extends FragmentActivity implements OnMapReadyCallback {
@@ -90,8 +88,6 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
           manageRideProposal(RideAction.DECLINED);
         } catch (JSONException e) {
           e.printStackTrace();
-        } catch (KuzzleException e) {
-          e.printStackTrace();
         }
       }
     });
@@ -103,8 +99,6 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
           manageRideProposal(RideAction.ACCEPTED);
         } catch (JSONException e) {
           e.printStackTrace();
-        } catch (KuzzleException e) {
-          e.printStackTrace();
         }
       }
     });
@@ -115,29 +109,19 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
           manageRideProposal(RideAction.FINISHED);
         } catch (JSONException e) {
           e.printStackTrace();
-        } catch (KuzzleException e) {
-          e.printStackTrace();
         }
       }
     });
 
     if (userType == UserType.CAB) {
-      ((Button) findViewById(R.id.availability)).setText(getResources().getString(R.string.start_cab_availability));
+      ((Button) findViewById(R.id.availability)).setText(getResources().getString(R.string.look_for_customers));
     } else {
-      ((Button) findViewById(R.id.availability)).setText(getResources().getString(R.string.start_customer_availability));
+      ((Button) findViewById(R.id.availability)).setText(getResources().getString(R.string.look_for_cab));
     }
     findViewById(R.id.availability).setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View v) {
-        try {
-          changeUserStatus();
-        } catch (KuzzleException e) {
-          e.printStackTrace();
-        } catch (JSONException e) {
-          e.printStackTrace();
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
+        changeUserStatus();
       }
     });
     MapController mapControllerInstance = MapController.getSingleton(this);
@@ -147,37 +131,31 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
 
     this.mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
     mapFragment.getMapAsync(this);
-
-    try {
-      connectToKuzzle();
-    } catch (URISyntaxException e) {
-      e.printStackTrace();
-    }
   }
 
-  private void changeUserStatus() throws KuzzleException, JSONException, IOException {
+  private void changeUserStatus() {
     Status userStatus = Status.valueOf(self.getContent("status").toString().toUpperCase());
     if (userType == UserType.CAB) {
       if (userStatus == Status.IDLE) {
         self.setContent("status", Status.TOHIRE.toString());
-        ((Button) findViewById(R.id.availability)).setText(R.string.stop_cab_availability);
+        ((Button) findViewById(R.id.availability)).setText(R.string.stop_looking_for_customers);
       } else if (userStatus == Status.TOHIRE) {
         self.setContent("status", Status.IDLE.toString());
-        ((Button) findViewById(R.id.availability)).setText(R.string.start_cab_availability);
+        ((Button) findViewById(R.id.availability)).setText(R.string.look_for_customers);
       }
     } else if (userType == UserType.CUSTOMER) {
       if (userStatus == Status.IDLE) {
         self.setContent("status", Status.WANTTOHIRE.toString());
-        ((Button) findViewById(R.id.availability)).setText(R.string.stop_customer_availability);
+        ((Button) findViewById(R.id.availability)).setText(R.string.stop_looking_for_cab);
       } else if (userStatus == Status.WANTTOHIRE) {
         self.setContent("status", Status.IDLE.toString());
-        ((Button) findViewById(R.id.availability)).setText(R.string.start_customer_availability);
+        ((Button) findViewById(R.id.availability)).setText(R.string.look_for_cab);
       }
     }
     self.save();
   }
 
-  public void manageRideProposal(final RideAction action) throws JSONException, KuzzleException {
+  public void manageRideProposal(final RideAction action) throws JSONException {
     if (currentRide == null)
       return;
     if (!currentRide.getJSONObject("body").keys().hasNext() && !currentRide.isNull("_source")) {
@@ -188,52 +166,49 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     currentRide.save(new ResponseListener() {
       @Override
       public void onSuccess(JSONObject object) {
-        try {
-          switch (action) {
-            case DECLINED:
-              MapController.getSingleton(MapActivity.this.getBaseContext()).onRideRefused();
-              currentRide.delete();
-              break;
-            case ACCEPTED:
-              MapController.getSingleton(MapActivity.this.getBaseContext()).onRideAccepted(currentRide.getContent("from").toString());
-              handler.post(new Runnable() {
-                @Override
-                public void run() {
-                  findViewById(R.id.gif).setVisibility(View.VISIBLE);
-                  findViewById(R.id.availability).setVisibility(View.INVISIBLE);
-                  ((WebView) findViewById(R.id.gif)).loadUrl("file:///android_asset/gif.html");
-                }
-              });
-              break;
-            case FINISHED:
-              MapController.getSingleton(MapActivity.this.getBaseContext()).onRideFinished(currentRide.getContent("from").toString());
-              handler.post(new Runnable() {
-                @Override
-                public void run() {
-                  findViewById(R.id.gif).setVisibility(View.GONE);
-                  findViewById(R.id.availability).setVisibility(View.VISIBLE);
-                }
-              });
-              currentRide.delete();
-              self.setContent("status", Status.IDLE);
-              changeUserStatus();
-              break;
-            case CANCELLED:
-              MapController.getSingleton(MapActivity.this.getBaseContext()).onRideCancelled(currentRide.getContent("from").toString());
-              handler.post(new Runnable() {
-                @Override
-                public void run() {
-                  MapActivity.this.findViewById(R.id.notification).setVisibility(View.GONE);
-                }
-              });
-              break;
-          }
-        } catch (JSONException e) {
-          e.printStackTrace();
-        } catch (KuzzleException e) {
-          e.printStackTrace();
-        } catch (IOException e) {
-          e.printStackTrace();
+        switch (action) {
+          case DECLINED:
+            MapController.getSingleton(MapActivity.this.getBaseContext()).onRideRefused();
+            currentRide.delete();
+            break;
+          case ACCEPTED:
+            MapController.getSingleton(MapActivity.this.getBaseContext()).onRideAccepted(currentRide.getContent("from").toString());
+            handler.post(new Runnable() {
+              @Override
+              public void run() {
+                findViewById(R.id.gif).setVisibility(View.VISIBLE);
+                findViewById(R.id.availability).setVisibility(View.INVISIBLE);
+                ((WebView) findViewById(R.id.gif)).loadUrl("file:///android_asset/gif.html");
+              }
+            });
+            break;
+          case FINISHED:
+            MapController.getSingleton(MapActivity.this.getBaseContext()).onRideFinished(currentRide.getContent("from").toString());
+            handler.post(new Runnable() {
+              @Override
+              public void run() {
+                findViewById(R.id.gif).setVisibility(View.GONE);
+                findViewById(R.id.availability).setVisibility(View.VISIBLE);
+              }
+            });
+            currentRide.delete();
+            self.setContent("status", Status.IDLE);
+            handler.post(new Runnable() {
+              @Override
+              public void run() {
+                changeUserStatus();
+              }
+            });
+            break;
+          case CANCELLED:
+            MapController.getSingleton(MapActivity.this.getBaseContext()).onRideCancelled(currentRide.getContent("from").toString());
+            handler.post(new Runnable() {
+              @Override
+              public void run() {
+                MapActivity.this.findViewById(R.id.notification).setVisibility(View.GONE);
+              }
+            });
+            break;
         }
       }
 
@@ -244,7 +219,53 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     });
   }
 
-  private void  publishRideProposal(RideAction action, String candidateId) throws JSONException, KuzzleException {
+  private void manageResponseProposal(RideAction action, JSONObject proposal) {
+    try {
+      switch (action) {
+        case DECLINED:
+          MapController.getSingleton(MapActivity.this.getBaseContext()).onRideRefused();
+          currentRide.delete();
+          break;
+        case ACCEPTED:
+          MapController.getSingleton(MapActivity.this.getBaseContext()).onRideAccepted(proposal.getString("from"));
+          handler.post(new Runnable() {
+            @Override
+            public void run() {
+              findViewById(R.id.gif).setVisibility(View.VISIBLE);
+              findViewById(R.id.availability).setVisibility(View.INVISIBLE);
+              ((WebView) findViewById(R.id.gif)).loadUrl("file:///android_asset/gif.html");
+            }
+          });
+          break;
+        case FINISHED:
+          MapController.getSingleton(MapActivity.this.getBaseContext()).onRideFinished(proposal.getString("from").toString());
+          handler.post(new Runnable() {
+            @Override
+            public void run() {
+              findViewById(R.id.gif).setVisibility(View.GONE);
+              findViewById(R.id.availability).setVisibility(View.VISIBLE);
+            }
+          });
+          currentRide.delete();
+          self.setContent("status", Status.IDLE);
+          break;
+        case CANCELLED:
+          MapController.getSingleton(MapActivity.this.getBaseContext()).onRideCancelled(proposal.getString("from").toString());
+          handler.post(new Runnable() {
+            @Override
+            public void run() {
+              MapActivity.this.findViewById(R.id.notification).setVisibility(View.GONE);
+            }
+          });
+          break;
+      }
+    } catch (JSONException e) {
+      e.printStackTrace();
+    }
+  }
+
+
+  private void  publishRideProposal(RideAction action, String candidateId) throws JSONException {
     switch (action) {
       case ASK:
       case PROPOSE:
@@ -265,18 +286,18 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     kuzzle = new Kuzzle(kuzzle_host, "cabble", options, new ResponseListener() {
       @Override
       public void onSuccess(JSONObject object) {
-        try {
-          Log.e("cabble", "Connected to kuzzle");
-          userCollection = kuzzle.dataCollectionFactory(getResources().getString(R.string.cabble_collection_users));
-          rideCollection = kuzzle.dataCollectionFactory(getResources().getString(R.string.cabble_collection_rides));
-          createMySelf();
-        } catch (KuzzleException e) {
-          e.printStackTrace();
-        } catch (JSONException e) {
-          e.printStackTrace();
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
+        Log.e("cabble", "Connected to kuzzle");
+        prepareMapping(new ResponseListener() {
+          @Override
+          public void onSuccess(JSONObject object) {
+            createMySelf();
+          }
+
+          @Override
+          public void onError(JSONObject error) {
+
+          }
+        });
       }
 
       @Override
@@ -286,10 +307,80 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     });
   }
 
-  private void createMySelf() throws JSONException, IOException, KuzzleException {
-    JSONObject pos = new JSONObject()
-        .put("lat", getResources().getString(R.string.default_lat))
-        .put("lon", getResources().getString(R.string.default_lon));
+  private void mapGeoPoint() {
+    KuzzleDataMapping mapping = new KuzzleDataMapping(userCollection);
+    try {
+      mapping.set("pos", new JSONObject().put("type", "geo_point"));
+      mapping.apply();
+    } catch (JSONException e) {
+      e.printStackTrace();
+    }
+  }
+
+  private void  prepareMapping(final ResponseListener listener) {
+    kuzzle.listCollections(new ResponseListener() {
+      @Override
+      public void onSuccess(JSONObject object) {
+        userCollection = kuzzle.dataCollectionFactory(getResources().getString(R.string.cabble_collection_users));
+        rideCollection = kuzzle.dataCollectionFactory(getResources().getString(R.string.cabble_collection_rides));
+        listener.onSuccess(null);
+      }
+
+      @Override
+      public void onError(JSONObject error) {
+        JSONObject query = new JSONObject();
+        try {
+          query.put("controller", "admin").put("action", "createIndex").put("index", "cabble");
+          kuzzle.query("", "admin", "createIndex", query, new ResponseListener() {
+            @Override
+            public void onSuccess(JSONObject object) {
+              userCollection = kuzzle.dataCollectionFactory(getResources().getString(R.string.cabble_collection_users));
+              rideCollection = kuzzle.dataCollectionFactory(getResources().getString(R.string.cabble_collection_rides));
+              userCollection.create(new ResponseListener() {
+                @Override
+                public void onSuccess(JSONObject object) {
+                  mapGeoPoint();
+                  rideCollection.create(new ResponseListener() {
+                    @Override
+                    public void onSuccess(JSONObject object) {
+                      listener.onSuccess(null);
+                    }
+
+                    @Override
+                    public void onError(JSONObject error) {
+
+                    }
+                  });
+                }
+
+                @Override
+                public void onError(JSONObject error) {
+
+                }
+              });
+            }
+
+            @Override
+            public void onError(JSONObject error) {
+
+            }
+          });
+        } catch (JSONException e) {
+          e.printStackTrace();
+        }
+      }
+    });
+  }
+
+  private void createMySelf() {
+    JSONObject pos = null;
+    try {
+      pos = new JSONObject()
+          .put("lat", getResources().getString(R.string.default_lat))
+          .put("lon", getResources().getString(R.string.default_lon));
+    } catch (JSONException e) {
+      e.printStackTrace();
+    }
     self = new KuzzleDocument(userCollection);
     self.setContent("type", userType.toString().toLowerCase())
         .setContent("pos", pos)
@@ -304,9 +395,8 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
           initUserSubscribeFilter();
           subscribeToUsersScope();
           subscribeToCollections();
+          getConnectedUsers();
         } catch (JSONException e) {
-          e.printStackTrace();
-        } catch (KuzzleException e) {
           e.printStackTrace();
         } catch (IOException e) {
           e.printStackTrace();
@@ -323,7 +413,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     JSONObject geo_distance = new JSONObject();
     JSONObject filter = new JSONObject();
     geo_distance.put("pos", self.getContent("pos"));
-    geo_distance.put("distance", getResources().getString(R.string.distance_filter) + "km");
+    geo_distance.put("distance", getResources().getString(R.string.distance_filter) + "m");
     filter.put("geo_distance", geo_distance);
     return filter;
   }
@@ -351,7 +441,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
       terms.put("terms", statu);
       terms2.put("terms", type);
       and.put(terms).put(terms2);
-      //and.put(getGeoDistanceFilter());
+      and.put(getGeoDistanceFilter());
 
       userSubscribeFilter.put("and", and);
     }
@@ -373,12 +463,13 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     return rideFilter;
   }
 
-  private void subscribeToCollections() throws JSONException, IOException, KuzzleException {
+  private void subscribeToCollections() throws JSONException, IOException {
     KuzzleRoomOptions options = new KuzzleRoomOptions();
     options.setSubscribeToSelf(false);
     userRoom = userCollection.subscribe(userSubscribeFilter, options, new ResponseListener() {
       @Override
       public void onSuccess(JSONObject object) {
+        Log.e("cabble", "# user: " + object.toString());
         try {
           if (!object.getString("scope").equals("out")) {
             if (!object.getString("_id").equals(self.getId())) {
@@ -419,8 +510,6 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
           e.printStackTrace();
         } catch (JSONException e) {
           e.printStackTrace();
-        } catch (KuzzleException e) {
-          e.printStackTrace();
         }
       }
 
@@ -440,16 +529,6 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     else
       mBuilder.setContentTitle("A customer wants a ride !");
     if (mBuilder != null) {
-      Intent resultIntent = new Intent(this, MapActivity.class);
-      resultIntent.putExtra("type", userType);
-      PendingIntent resultPendingIntent =
-          PendingIntent.getActivity(
-              this,
-              0,
-              resultIntent,
-              PendingIntent.FLAG_UPDATE_CURRENT
-          );
-      mBuilder.setContentIntent(resultPendingIntent);
       mBuilder.setVibrate(new long[] {1000, 1000});
       Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
       mBuilder.setSound(alarmSound);
@@ -459,11 +538,20 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     }
   }
 
-  private void manageRideProposal() throws IOException, JSONException, KuzzleException {
+  private void manageRideProposal() throws IOException, JSONException {
     if (!currentRide.getString("action").equals("delete")) {
-      JSONObject source = currentRide.getJSONObject("_source");
+      final JSONObject source = currentRide.getJSONObject("_source");
       if (source.getString("from").equals(self.getId()) || !source.getString("status").equals("awaiting")) {
-        manageRideProposal(RideAction.valueOf(source.getString("status").toUpperCase()));
+        handler.post(new Runnable() {
+          @Override
+          public void run() {
+            try {
+              manageResponseProposal(RideAction.valueOf(source.getString("status").toUpperCase()), source);
+            } catch (JSONException e) {
+              e.printStackTrace();
+            }
+          }
+        });
       } else {
         MapController.getSingleton(this).onRideProposal(currentRide, userType);
         pushNotification();
@@ -471,7 +559,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     }
   }
 
-  private void subscribeToUsersScope() throws JSONException, KuzzleException, IOException {
+  private void subscribeToUsersScope() throws JSONException, IOException {
     KuzzleRoomOptions options = new KuzzleRoomOptions();
     options.setUsers(Users.OUT);
     JSONObject meta = new JSONObject();
@@ -498,10 +586,16 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     });
   }
 
-  private void getConnectedUsers() throws JSONException, KuzzleException, IOException {
+  private void getConnectedUsers() throws JSONException, IOException {
     JSONObject filter = new JSONObject();
+    JSONArray types = new JSONArray();
+    types.put("cab");
+    if (userType == UserType.CAB) {
+      types.put("customer");
+    }
+    initUserSubscribeFilter();
     filter.put("filter", userSubscribeFilter);
-    //filter.put("query", new JSONObject().put("terms", new JSONObject().put("type", userType.toString().toLowerCase())));
+    filter.put("query", new JSONObject().put("terms", new JSONObject().put("type", types)));
     kuzzle.dataCollectionFactory(getResources().getString(R.string.cabble_collection_users)).advancedSearch(filter, new ResponseListener() {
       @Override
       public void onSuccess(JSONObject object) {
@@ -532,7 +626,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     MapController.getSingleton(this).moveMarker(object.getString("_id"), UserType.valueOf(source.getString("type").toUpperCase()), pos.getDouble("lat"), pos.getDouble("lon"));
   }
 
-  private void updateMyPosition(LatLng location) throws JSONException, KuzzleException, IOException {
+  private void updateMyPosition(LatLng location) throws JSONException, IOException {
     JSONObject pos = new JSONObject()
         .put("lat", location.latitude)
         .put("lon", location.longitude);
@@ -543,12 +637,15 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     }
   }
 
-  private void invalidate() throws JSONException, KuzzleException, IOException {
+  private void invalidate() throws JSONException, IOException {
     kuzzle.dataCollectionFactory(getResources().getString(R.string.cabble_collection_users)).deleteDocument(self.getString("_id"));
     MapController.getSingleton(this).clearMap();
-    userRoom.unsubscribe();
-    rideRoom.unsubscribe();
-    usersScope.unsubscribe();
+    if (userRoom != null)
+      userRoom.unsubscribe();
+    if (rideRoom != null)
+      rideRoom.unsubscribe();
+    if (usersScope != null)
+      usersScope.unsubscribe();
     kuzzle.logout();
   }
 
@@ -560,27 +657,27 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
       e.printStackTrace();
     } catch (JSONException e) {
       e.printStackTrace();
-    } catch (KuzzleException e) {
-      e.printStackTrace();
     }
     super.onDestroy();
   }
 
   @Override
   public void onMapReady(GoogleMap googleMap) {
+    try {
+      connectToKuzzle();
+    } catch (URISyntaxException e) {
+      e.printStackTrace();
+    }
     googleMap.setMyLocationEnabled(true);
     googleMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
       @Override
       public void onMyLocationChange(Location location) {
-        Log.e("cabble", "My location changed: " + location.toString());
         try {
           LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
           updateMyPosition(latLng);
         } catch (IOException e) {
           e.printStackTrace();
         } catch (JSONException e) {
-          e.printStackTrace();
-        } catch (KuzzleException e) {
           e.printStackTrace();
         }
       }
@@ -589,7 +686,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     double lon = Double.parseDouble(MapActivity.this.getResources().getString(R.string.default_lon));
     vicinity = googleMap.addCircle(new CircleOptions()
         .center(new LatLng(lat, lon))
-        .radius(Double.parseDouble(MapActivity.this.getResources().getString(R.string.distance_filter)) * 100));
+        .radius(Double.parseDouble(MapActivity.this.getResources().getString(R.string.distance_filter))));
 
     MapController.getSingleton(this).setMapView(googleMap);
     MapController.getSingleton(this).setHandler(handler);
@@ -609,8 +706,8 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
           if (Status.valueOf(userList.get(id).getContent("status").toString().toUpperCase()) == Status.IDLE ||
               UserType.valueOf(userList.get(id).getContent("type").toString().toUpperCase()) == UserType.valueOf(self.getContent("type").toString().toUpperCase())) {
             v = getLayoutInflater().inflate(R.layout.idle_bubble, null);
-            ((TextView)v.findViewById(R.id.userid)).setText(MapActivity.this.userList.get(id).getString("_id"));
-            ((TextView)v.findViewById(R.id.status)).setText(MapActivity.this.userList.get(id).getContent("status").toString());
+            ((TextView) v.findViewById(R.id.userid)).setText(MapActivity.this.userList.get(id).getString("_id"));
+            ((TextView) v.findViewById(R.id.status)).setText(MapActivity.this.userList.get(id).getContent("status").toString());
           } else {
             if (userType != UserType.CAB) {
               v = getLayoutInflater().inflate(R.layout.taxi_bubble, null);
@@ -624,16 +721,6 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
         return v;
       }
     });
-    try {
-      initUserSubscribeFilter();
-      getConnectedUsers();
-    } catch (JSONException e) {
-      e.printStackTrace();
-    } catch (KuzzleException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
     googleMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
       @Override
       public void onInfoWindowClick(Marker marker) {

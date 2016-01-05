@@ -156,8 +156,10 @@ public class MapController {
       @Override
       public void run() {
         BlinkingMarker marker = markerList.get(userId);
-        if (marker != null)
+        if (marker != null) {
           marker.stopBlinking().removeMarker();
+          markerList.remove(userId);
+        }
       }
     });
     return this;

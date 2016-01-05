@@ -19,14 +19,14 @@
     <string name="customer_to_taxi_text">This customer would like you to take him on a ride</string>
 
     <!-- availability button -->
-    <string name="start_cab_availability">Look for customers</string>
-    <string name="start_customer_availability">Look for a cab</string>
-    <string name="stop_cab_availability">Stop looking for customers</string>
-    <string name="stop_customer_availability">Stop looking for a cab</string>
+    <string name="look_for_customers">Look for customers</string>
+    <string name="look_for_cab">Look for a cab</string>
+    <string name="stop_looking_for_customers">Stop looking for customers</string>
+    <string name="stop_looking_for_cab">Stop looking for a cab</string>
 
     <string name="default_lat">43.6073932</string>
     <string name="default_lon">3.9116513</string>
 
-    <string name="distance_filter">245</string>
+    <string name="distance_filter">5000</string>
 
 </resources>
