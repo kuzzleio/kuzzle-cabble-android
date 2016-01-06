@@ -4,7 +4,6 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Handler;
-import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
@@ -44,9 +43,9 @@ public class MapController {
     this.ctx = ctx;
   }
 
-  public MapController addNewMarker(final LatLng location, final String userId, UserType type) throws Exception {
+  public MapController addNewMarker(final LatLng location, final String userId, UserType type) {
     if (this.mapView == null)
-      throw new Exception("The MapView cannot be null");
+      throw new RuntimeException("The MapView cannot be null");
     // Create new marker on the map
 
     final Bitmap bitmap;
@@ -68,12 +67,11 @@ public class MapController {
     return this;
   }
 
-  public MapController moveMarker(String userId, UserType type, double lat, double lon) throws Exception {
+  public MapController moveMarker(String userId, UserType type, double lat, double lon) {
     final BlinkingMarker marker = markerList.get(userId);
     final LatLng pos = new LatLng(lat, lon);
     if (marker == null) {
       // New user
-      Log.e("cabble", "Creating new user: " + userId);
       addNewMarker(pos, userId, type);
     } else {
       // Move user if location changed
@@ -182,14 +180,6 @@ public class MapController {
       }
     });
     return this;
-  }
-
-  public boolean hasInfoWindow(final String userId) {
-    BlinkingMarker marker = markerList.get(userId);
-    if (marker != null) {
-      return marker.hasInfoWindow();
-    }
-    return false;
   }
 
   public void hasInfoWindow(final String userId, boolean has) {

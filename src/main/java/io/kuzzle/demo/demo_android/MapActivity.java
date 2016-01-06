@@ -28,7 +28,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
@@ -80,6 +79,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     setContentView(R.layout.map_view);
     userType = (UserType) getIntent().getExtras().get("type");
     kuzzle_host = getIntent().getExtras().get("kuzzle_host").toString();
+    // Set listener of buttons
     findViewById(R.id.declineride).setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View v) {
@@ -114,6 +114,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
       }
     });
 
+    // Set text on availability button according to type
     if (userType == UserType.CAB) {
       ((Button) findViewById(R.id.availability)).setText(getResources().getString(R.string.look_for_customers));
     } else {
@@ -130,11 +131,13 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     mapControllerInstance.setNotificationHeader(findViewById(R.id.notification));
     mapControllerInstance.setNotificationHeaderText((TextView) findViewById(R.id.notification_text));
 
+    // Show map
     this.mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
     mapFragment.getMapAsync(this);
   }
 
   private void changeUserStatus() {
+    // Change the attribute 'status' of the self document, other subscribed users will be notified
     Status userStatus = Status.valueOf(self.getContent("status").toString().toUpperCase());
     if (userType == UserType.CAB) {
       if (userStatus == Status.IDLE) {
@@ -169,9 +172,11 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
       public void onSuccess(JSONObject object) {
         switch (action) {
           case DECLINED:
+            // We decline the proposal
             currentRide.delete();
             break;
           case ACCEPTED:
+            // We accept the proposal
             MapController.getSingleton(MapActivity.this.getBaseContext()).onRideAccepted();
             handler.post(new Runnable() {
               @Override
@@ -183,6 +188,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
             });
             break;
           case FINISHED:
+            // We end the ride
             MapController.getSingleton(MapActivity.this.getBaseContext()).onRideFinished(currentRide.getContent("from").toString());
             handler.post(new Runnable() {
               @Override
@@ -211,10 +217,10 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
   }
 
   private void manageResponseProposal(RideAction action, JSONObject proposal) {
-    Log.e("cabble", "action: "+action.toString());
     try {
       switch (action) {
         case DECLINED:
+          // Candidate declined the proposal
           MapController.getSingleton(MapActivity.this.getBaseContext()).onRideRefused(proposal.getString("to"));
           currentRide.delete();
           handler.post(new Runnable() {
@@ -225,6 +231,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
           });
           break;
         case ACCEPTED:
+          // Candidate accepted our proposal
           MapController.getSingleton(MapActivity.this.getBaseContext()).onRideAccepted();
           handler.post(new Runnable() {
             @Override
@@ -236,6 +243,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
           });
           break;
         case FINISHED:
+          // Candidate ended the ride
           MapController.getSingleton(MapActivity.this.getBaseContext()).onRideFinished(proposal.getString("from"));
           handler.post(new Runnable() {
             @Override
@@ -248,6 +256,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
           self.setContent("status", Status.IDLE);
           break;
         case CANCELLED:
+          // Candidate refused our proposal
           MapController.getSingleton(MapActivity.this.getBaseContext()).onRideCancelled(proposal.getString("from"));
           currentRide.delete();
           handler.post(new Runnable() {
@@ -278,14 +287,17 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
 
   private void connectToKuzzle() throws URISyntaxException {
     KuzzleOptions options = new KuzzleOptions();
+    // We want our app to auto reconnect in case of lose of wifi / 3G
     options.setAutoReconnect(true);
+    // We want our app to auto replay all the actions stacked during offline
     options.setAutoReplay(true);
     options.setQueuable(true);
     options.setOfflineMode(Mode.AUTO);
+    // Connect to kuzzle using 'cabble' index
     kuzzle = new Kuzzle(kuzzle_host, "cabble", options, new ResponseListener() {
       @Override
       public void onSuccess(JSONObject object) {
-        Log.e("cabble", "Connected to kuzzle");
+        Log.i("cabble", "Connected to kuzzle");
         prepareMapping(new ResponseListener() {
           @Override
           public void onSuccess(JSONObject object) {
@@ -294,7 +306,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
 
           @Override
           public void onError(JSONObject error) {
-
+            Log.e("cabble", "An error occured during the connection to kuzzle: " + error.toString());
           }
         });
       }
@@ -307,6 +319,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
   }
 
   private void mapGeoPoint() {
+    // Make the geo spatial mapping
     KuzzleDataMapping mapping = new KuzzleDataMapping(userCollection);
     try {
       mapping.set("pos", new JSONObject().put("type", "geo_point"));
@@ -320,6 +333,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     kuzzle.listCollections(new ResponseListener() {
       @Override
       public void onSuccess(JSONObject object) {
+        // Create collections
         userCollection = kuzzle.dataCollectionFactory(getResources().getString(R.string.cabble_collection_users));
         rideCollection = kuzzle.dataCollectionFactory(getResources().getString(R.string.cabble_collection_rides));
         listener.onSuccess(null);
@@ -329,16 +343,19 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
       public void onError(JSONObject error) {
         JSONObject query = new JSONObject();
         try {
+          // Create index
           query.put("controller", "admin").put("action", "createIndex").put("index", "cabble");
           kuzzle.query("", "admin", "createIndex", query, new ResponseListener() {
             @Override
             public void onSuccess(JSONObject object) {
               userCollection = kuzzle.dataCollectionFactory(getResources().getString(R.string.cabble_collection_users));
               rideCollection = kuzzle.dataCollectionFactory(getResources().getString(R.string.cabble_collection_rides));
+              // Create user collection
               userCollection.create(new ResponseListener() {
                 @Override
                 public void onSuccess(JSONObject object) {
                   mapGeoPoint();
+                  // Create ride collection
                   rideCollection.create(new ResponseListener() {
                     @Override
                     public void onSuccess(JSONObject object) {
@@ -347,21 +364,21 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
 
                     @Override
                     public void onError(JSONObject error) {
-
+                      Log.e("cabble", "Error during creation of collection " + error.toString());
                     }
                   });
                 }
 
                 @Override
                 public void onError(JSONObject error) {
-
+                  Log.e("cabble", "Error during creation of collection " + error.toString());
                 }
               });
             }
 
             @Override
             public void onError(JSONObject error) {
-
+              Log.e("cabble", "Error during creation of index " + error.toString());
             }
           });
         } catch (JSONException e) {
@@ -372,6 +389,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
   }
 
   private void createMySelf() {
+    // Creating the document that represents ourself
     JSONObject pos = null;
     try {
       pos = new JSONObject()
@@ -388,7 +406,6 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     userCollection.createDocument(self, new ResponseListener() {
       @Override
       public void onSuccess(JSONObject object) {
-        Log.e("cabble", "Created myself: " + self.toString());
         try {
           self.put("_id", object.getString("_id"));
           initUserSubscribeFilter();
@@ -397,18 +414,18 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
           getConnectedUsers();
         } catch (JSONException e) {
           e.printStackTrace();
-        } catch (IOException e) {
-          e.printStackTrace();
         }
       }
 
       @Override
       public void onError(JSONObject error) {
+        Log.e("cabble", "Error during creation of self " + error.toString());
       }
     });
   }
 
   private JSONObject  getGeoDistanceFilter() throws JSONException {
+    // Make the geo distance filter which will represent our vicinity (5km)
     JSONObject geo_distance = new JSONObject();
     JSONObject filter = new JSONObject();
     geo_distance.put("pos", self.getContent("pos"));
@@ -418,6 +435,10 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
   }
 
   private void initUserSubscribeFilter() throws JSONException {
+    /* We want to subscribe to available customers and taxi if we are a taxi.
+       We want to subscribe to available taxi if we are customers.
+       Finally we want to subscribe to users in our vicinity
+    */
     if (userSubscribeFilter == null) {
       userSubscribeFilter = new JSONObject();
       JSONArray and = new JSONArray();
@@ -462,15 +483,15 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     return rideFilter;
   }
 
-  private void subscribeToCollections() throws JSONException, IOException {
+  private void subscribeToCollections() throws JSONException {
     KuzzleRoomOptions options = new KuzzleRoomOptions();
     options.setSubscribeToSelf(false);
     userRoom = userCollection.subscribe(userSubscribeFilter, options, new ResponseListener() {
       @Override
       public void onSuccess(JSONObject object) {
-        Log.e("cabble", "# user: " + object.toString());
         try {
           if (!object.getString("scope").equals("out")) {
+            // The user is in our vicinity
             if (!object.getString("_id").equals(self.getId())) {
               JSONObject source = object.getJSONObject("_source");
               KuzzleDocument user = new KuzzleDocument(userCollection, object);
@@ -486,9 +507,10 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
               }
             }
           } else {
+            // The user is out of our vicinity
             MapController.getSingleton(MapActivity.this.getBaseContext()).hideCandidate(object.getString("_id"));
           }
-        } catch (Exception e) {
+        } catch (JSONException e) {
           e.printStackTrace();
         }
       }
@@ -498,14 +520,13 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
         Log.e("cabble", "Error while subscribing to users " + error.toString());
       }
     });
+    // Subscribe to rides
     rideRoom = rideCollection.subscribe(initRideSubscribeFilter(), options, new ResponseListener() {
       @Override
       public void onSuccess(JSONObject object) {
-        try {
           currentRide = new KuzzleDocument(rideCollection, object);
+        try {
           manageRideProposal();
-        } catch (IOException e) {
-          e.printStackTrace();
         } catch (JSONException e) {
           e.printStackTrace();
         }
@@ -519,6 +540,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
   }
 
   private void  pushNotification() {
+    // Push an android notification when a proposal is received
     NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this)
               .setSmallIcon(R.drawable.favicon)
               .setContentText("Go to cabble to see.");
@@ -536,7 +558,8 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     }
   }
 
-  private void manageRideProposal() throws IOException, JSONException {
+  private void manageRideProposal() throws JSONException {
+    // Handle the proposal
     if (!currentRide.getString("action").equals("delete")) {
       final JSONObject source = currentRide.getJSONObject("_source");
       if (source.getString("from").equals(self.getId()) || !source.getString("status").equals("awaiting")) {
@@ -557,7 +580,8 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     }
   }
 
-  private void subscribeToUsersScope() throws JSONException, IOException {
+  private void subscribeToUsersScope() throws JSONException {
+    // Subscription to know when a user is disconnected
     KuzzleRoomOptions options = new KuzzleRoomOptions();
     options.setUsers(Users.OUT);
     JSONObject meta = new JSONObject();
@@ -579,12 +603,13 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
 
       @Override
       public void onError(JSONObject error) {
-        Log.e("cabble error", error.toString());
+        Log.e("cabble", error.toString());
       }
     });
   }
 
-  private void getConnectedUsers() throws JSONException, IOException {
+  private void getConnectedUsers() throws JSONException {
+    // Search for all users according to type, availability and vicinity
     JSONObject filter = new JSONObject();
     JSONArray types = new JSONArray();
     types.put("cab");
@@ -597,7 +622,6 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     kuzzle.dataCollectionFactory(getResources().getString(R.string.cabble_collection_users)).advancedSearch(filter, new ResponseListener() {
       @Override
       public void onSuccess(JSONObject object) {
-        Log.e("cabble## ", object.toString());
         try {
           for (int i = 0; i < object.getJSONArray("documents").length(); i++) {
             KuzzleDocument doc = new KuzzleDocument(userCollection, object.getJSONArray("documents").getJSONObject(i));
@@ -605,8 +629,6 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
             updateUserPosition(object.getJSONArray("documents").getJSONObject(i));
           }
         } catch (JSONException e) {
-          e.printStackTrace();
-        } catch (Exception e) {
           e.printStackTrace();
         }
       }
@@ -618,13 +640,19 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     });
   }
 
-  private void updateUserPosition(final JSONObject object) throws Exception {
-    JSONObject source = object.getJSONObject("body");
-    JSONObject pos = source.getJSONObject("pos");
-    MapController.getSingleton(this).moveMarker(object.getString("_id"), UserType.valueOf(source.getString("type").toUpperCase()), pos.getDouble("lat"), pos.getDouble("lon"));
+  private void updateUserPosition(final JSONObject object) {
+    // A user moved
+    try {
+      JSONObject source = object.getJSONObject("body");
+      JSONObject pos = source.getJSONObject("pos");
+      MapController.getSingleton(this).moveMarker(object.getString("_id"), UserType.valueOf(source.getString("type").toUpperCase()), pos.getDouble("lat"), pos.getDouble("lon"));
+    } catch (JSONException e) {
+      e.printStackTrace();
+    }
   }
 
-  private void updateMyPosition(LatLng location) throws JSONException, IOException {
+  private void updateMyPosition(LatLng location) throws JSONException {
+    // We moved
     JSONObject pos = new JSONObject()
         .put("lat", location.latitude)
         .put("lon", location.longitude);
@@ -635,7 +663,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     }
   }
 
-  private void invalidate() throws JSONException, IOException {
+  private void invalidate() throws JSONException {
     kuzzle.dataCollectionFactory(getResources().getString(R.string.cabble_collection_users)).deleteDocument(self.getString("_id"));
     MapController.getSingleton(this).clearMap();
     if (userRoom != null)
@@ -651,8 +679,6 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
   protected void onDestroy() {
     try {
       this.invalidate();
-    } catch (IOException e) {
-      e.printStackTrace();
     } catch (JSONException e) {
       e.printStackTrace();
     }
@@ -661,6 +687,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
 
   @Override
   public void onMapReady(GoogleMap googleMap) {
+    // Connection to kuzzle
     try {
       connectToKuzzle();
     } catch (URISyntaxException e) {
@@ -672,9 +699,8 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
       public void onMyLocationChange(Location location) {
         try {
           LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+          // Update our position
           updateMyPosition(latLng);
-        } catch (IOException e) {
-          e.printStackTrace();
         } catch (JSONException e) {
           e.printStackTrace();
         }
@@ -728,6 +754,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
       @Override
       public void onInfoWindowClick(Marker marker) {
         try {
+          // Publish a proposal to a specific user
           currentRide = new KuzzleDocument(rideCollection);
           publishRideProposal(RideAction.ASK, marker.getSnippet());
         } catch (Exception e) {
