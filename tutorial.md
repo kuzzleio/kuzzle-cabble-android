@@ -2,7 +2,7 @@
 
 Cabble is an app enabling customers to find a cab, and cabs to find customers.
 
-## Table of contents
+**Table of contents**
 
 * [Connection to kuzzle](#kuzzle-connection)
 * [Create index](#create-index)
