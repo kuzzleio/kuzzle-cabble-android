@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.kuzzle.demo.demo_android.enums.UserType;
+import io.kuzzle.sdk.core.KuzzleDocument;
 
 public class MapController {
 
@@ -89,8 +90,8 @@ public class MapController {
     return this;
   }
 
-  public MapController onRideProposal(final JSONObject rideProposal, final UserType userType) throws JSONException {
-    JSONObject source = rideProposal.getJSONObject("_source");
+  public MapController onRideProposal(final KuzzleDocument rideProposal, final UserType userType) throws JSONException {
+    JSONObject source = (JSONObject) rideProposal.getContent("_source");
     final BlinkingMarker marker = markerList.get(source.getString("from"));
     if (marker != null) {
       currentRideProposal = marker;
