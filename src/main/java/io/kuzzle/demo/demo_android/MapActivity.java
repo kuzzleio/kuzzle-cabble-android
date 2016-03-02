@@ -171,11 +171,13 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
   public void manageRideProposal(final RideAction action) throws JSONException {
     if (currentRide == null)
       return;
-    if (!currentRide.getContent().getJSONObject("body").keys().hasNext() && !currentRide.getContent().isNull("_source")) {
-      currentRide.getContent().put("body", currentRide.getContent().getJSONObject("_source"));
+    if (!currentRide.getContent().isNull("_source")) {
+      currentRide.setContent("from", currentRide.getContent().getJSONObject("_source").getString("from"));
+      currentRide.setContent("to", currentRide.getContent().getJSONObject("_source").getString("to"));
       currentRide.getContent().remove("_source");
     }
     currentRide.setContent("status", action.toString().toLowerCase());
+    Log.e("e", "### saving: " + currentRide.toString());
     currentRide.save(new KuzzleResponseListener<KuzzleDocument>() {
       @Override
       public void onSuccess(KuzzleDocument document) {
@@ -238,10 +240,11 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
   }
 
   private void manageResponseProposal(RideAction action, KuzzleDocument proposal) throws JSONException {
+    JSONObject source = (JSONObject) proposal.getContent("_source");
     switch (action) {
       case DECLINED:
         // Candidate declined the proposal
-        MapController.getSingleton(MapActivity.this.getBaseContext()).onRideRefused(proposal.getContent("to").toString());
+        MapController.getSingleton(MapActivity.this.getBaseContext()).onRideRefused(source.getString("to"));
         currentRide.delete();
         handler.post(new Runnable() {
           @Override
@@ -264,7 +267,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
         break;
       case FINISHED:
         // Candidate ended the ride
-        MapController.getSingleton(MapActivity.this.getBaseContext()).onRideFinished(proposal.getContent("from").toString());
+        MapController.getSingleton(MapActivity.this.getBaseContext()).onRideFinished(source.getString("from").toString());
         handler.post(new Runnable() {
           @Override
           public void run() {
@@ -277,7 +280,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
         break;
       case CANCELLED:
         // Candidate refused our proposal
-        MapController.getSingleton(MapActivity.this.getBaseContext()).onRideCancelled(proposal.getContent("from").toString());
+        MapController.getSingleton(MapActivity.this.getBaseContext()).onRideCancelled(source.getString("from").toString());
         currentRide.delete();
         handler.post(new Runnable() {
           @Override
@@ -396,6 +399,8 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
                     @Override
                     public void onError(JSONObject error) {
                       Log.e("cabble", "Error during creation of collection " + error.toString());
+                      // collection already exist
+                      listener.onSuccess(null);
                     }
                   });
                 }
@@ -410,6 +415,10 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
             @Override
             public void onError(JSONObject error) {
               Log.e("cabble", "Error during creation of index " + error.toString());
+              // index already exist
+              userCollection = kuzzle.dataCollectionFactory(getResources().getString(R.string.cabble_collection_users));
+              rideCollection = kuzzle.dataCollectionFactory(getResources().getString(R.string.cabble_collection_rides));
+              listener.onSuccess(null);
             }
           });
         } catch (JSONException e) {
@@ -442,7 +451,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
       @Override
       public void onSuccess(KuzzleDocument doc) {
         try {
-          self.getContent().put("_id", doc.getId());
+          self.setId(doc.getId());
           initUserSubscribeFilter();
           subscribeToUsersScope();
           subscribeToCollections();
@@ -535,9 +544,10 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
             String userId = doc.getId();
             userList.put(userId, notification.getDocument());
             try {
-              MapController.getSingleton(MapActivity.this).moveMarker(userId, UserType.valueOf(((String)doc.getContent("type")).toUpperCase()), ((JSONObject)doc.getContent("pos")).getDouble("lat"), ((JSONObject)doc.getContent("pos")).getDouble("lon"));
-              if (Status.valueOf(doc.getContent("status").toString().toUpperCase()) == Status.TOHIRE ||
-                  Status.valueOf(doc.getContent("status").toString().toUpperCase()) == Status.WANTTOHIRE) {
+              JSONObject source = (JSONObject)doc.getContent("_source");
+              MapController.getSingleton(MapActivity.this).moveMarker(userId, UserType.valueOf(source.getString("type").toUpperCase()), source.getJSONObject("pos").getDouble("lat"), source.getJSONObject("pos").getDouble("lon"));
+              if (Status.valueOf(source.getString("status").toString().toUpperCase()) == Status.TOHIRE ||
+                  Status.valueOf(source.getString("status").toString().toUpperCase()) == Status.WANTTOHIRE) {
                 MapController.getSingleton(MapActivity.this).makeMarkerBlink(doc.getId());
               } else {
                 MapController.getSingleton(MapActivity.this).makeMarkerStopBlinking(doc.getId());
@@ -600,12 +610,13 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
   private void manageRideProposal() {
     // Handle the proposal
     try {
-      if (currentRide.getContent("from").equals(self.getId()) || !currentRide.getContent("status").equals("awaiting")) {
+      final JSONObject source = (JSONObject)currentRide.getContent("_source");
+      if (source.getString("from").equals(self.getId()) || !source.getString("status").equals("awaiting")) {
         handler.post(new Runnable() {
           @Override
           public void run() {
             try {
-              manageResponseProposal(RideAction.valueOf(((String)currentRide.getContent("status")).toUpperCase()), currentRide);
+              manageResponseProposal(RideAction.valueOf((source.getString("status")).toUpperCase()), currentRide);
             } catch (JSONException e) {
               e.printStackTrace();
             }
@@ -683,9 +694,9 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
   private void updateUserPosition(final KuzzleDocument object) {
     // A user moved
     try {
-      JSONObject source = object.getContent().getJSONObject("body");
+      JSONObject source = object.getContent();
       JSONObject pos = source.getJSONObject("pos");
-      MapController.getSingleton(this).moveMarker(object.getContent().getString("_id"), UserType.valueOf(source.getString("type").toUpperCase()), pos.getDouble("lat"), pos.getDouble("lon"));
+      MapController.getSingleton(this).moveMarker(object.getId(), UserType.valueOf(source.getString("type").toUpperCase()), pos.getDouble("lat"), pos.getDouble("lon"));
     } catch (JSONException e) {
       e.printStackTrace();
     }
@@ -776,11 +787,12 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
         View v = null;
         String id = marker.getSnippet();
         try {
-          if (Status.valueOf(userList.get(id).getContent("status").toString().toUpperCase()) == Status.IDLE ||
-              UserType.valueOf(userList.get(id).getContent("type").toString().toUpperCase()) == UserType.valueOf(self.getContent("type").toString().toUpperCase())) {
+          JSONObject source = (JSONObject) userList.get(id).getContent("_source");
+          if (Status.valueOf(source.getString("status").toUpperCase()) == Status.IDLE ||
+              UserType.valueOf(source.getString("type").toUpperCase()) == UserType.valueOf(self.getContent("type").toString().toUpperCase())) {
             v = getLayoutInflater().inflate(R.layout.idle_bubble, null);
             ((TextView) v.findViewById(R.id.userid)).setText(MapActivity.this.userList.get(id).getContent().getString("_id"));
-            ((TextView) v.findViewById(R.id.status)).setText(MapActivity.this.userList.get(id).getContent("status").toString());
+            ((TextView) v.findViewById(R.id.status)).setText(source.getString("status"));
           } else {
             if (userType != UserType.CAB) {
               v = getLayoutInflater().inflate(R.layout.taxi_bubble, null);

@@ -11,6 +11,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
 
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -90,7 +91,8 @@ public class MapController {
   }
 
   public MapController onRideProposal(final KuzzleDocument rideProposal, final UserType userType) throws JSONException {
-    final BlinkingMarker marker = markerList.get(rideProposal.getContent("from"));
+    JSONObject source = (JSONObject) rideProposal.getContent("_source");
+    final BlinkingMarker marker = markerList.get(source.getString("from"));
     if (marker != null) {
       currentRideProposal = marker;
       makeMarkerBlink(marker);
