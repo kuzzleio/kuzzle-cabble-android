@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
     sharedPref = this.getSharedPreferences("cabble", Context.MODE_PRIVATE);
-    host = sharedPref.getString("host", "http://192.168.1.34:7512");
+    host = sharedPref.getString("host", "http://cabble.kuzzle.io:7512");
 
     findViewById(R.id.cab_btn).setOnClickListener(new View.OnClickListener() {
       @Override
