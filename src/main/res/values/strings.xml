@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">Cabble</string>
-    <string name="action_settings">Settings</string>
+    <string name="action_settings">Change host</string>
 
     <string name="kuzzleUrl">http://192.168.1.127:7512</string>
     <string name="kuzzleUrlAVD">http://10.0.2.2:7512</string>
@@ -24,9 +24,13 @@
     <string name="stop_looking_for_customers">Stop looking for customers</string>
     <string name="stop_looking_for_cab">Stop looking for a cab</string>
 
+    <string name="iamacab">I am a cab</string>
+    <string name="iamlookingforcab">I am looking for a cab</string>
+
     <string name="default_lat">43.6073932</string>
     <string name="default_lon">3.9116513</string>
 
     <string name="distance_filter">5000</string>
+    <string name="kuzzle_host">Kuzzle host</string>
 
 </resources>

@@ -1,6 +1,8 @@
 package io.kuzzle.demo.demo_android;
 
 import android.app.NotificationManager;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.location.Location;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -10,8 +12,8 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.view.View;
-import android.webkit.WebView;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -48,8 +50,8 @@ import io.kuzzle.sdk.enums.Scope;
 import io.kuzzle.sdk.enums.Users;
 import io.kuzzle.sdk.listeners.KuzzleResponseListener;
 import io.kuzzle.sdk.listeners.OnQueryDoneListener;
-import io.kuzzle.sdk.responses.KuzzleNotificationResponse;
 import io.kuzzle.sdk.responses.KuzzleDocumentList;
+import io.kuzzle.sdk.responses.KuzzleNotificationResponse;
 
 public class MapActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -108,16 +110,6 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
         }
       }
     });
-    findViewById(R.id.finishride).setOnClickListener(new View.OnClickListener() {
-      @Override
-      public void onClick(View v) {
-        try {
-          manageRideProposal(RideAction.FINISHED);
-        } catch (JSONException e) {
-          e.printStackTrace();
-        }
-      }
-    });
 
     // Set text on availability button according to type
     if (userType == UserType.CAB) {
@@ -146,26 +138,29 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
   }
 
   private void changeUserStatus() throws JSONException {
-    // Change the attribute 'status' of the self document, other subscribed users will be notified
-    Status userStatus = Status.valueOf(self.getContent("status").toString().toUpperCase());
-    if (userType == UserType.CAB) {
-      if (userStatus == Status.IDLE) {
-        self.setContent("status", Status.TOHIRE.toString());
-        ((Button) findViewById(R.id.availability)).setText(R.string.stop_looking_for_customers);
-      } else if (userStatus == Status.TOHIRE) {
-        self.setContent("status", Status.IDLE.toString());
+    if (self != null) {
+      // Change the attribute 'status' of the self document, other subscribed users will be notified
+      Status userStatus = Status.valueOf(self.getContent("status").toString().toUpperCase());
+      if (userType == UserType.CAB) {
         ((Button) findViewById(R.id.availability)).setText(R.string.look_for_customers);
+        if (userStatus == Status.IDLE) {
+          self.setContent("status", Status.TOHIRE.toString());
+          ((Button) findViewById(R.id.availability)).setText(R.string.stop_looking_for_customers);
+        } else if (userStatus == Status.TOHIRE) {
+          self.setContent("status", Status.IDLE.toString());
+          ((Button) findViewById(R.id.availability)).setText(R.string.look_for_customers);
+        }
+      } else if (userType == UserType.CUSTOMER) {
+        if (userStatus == Status.IDLE) {
+          self.setContent("status", Status.WANTTOHIRE.toString());
+          ((Button) findViewById(R.id.availability)).setText(R.string.stop_looking_for_cab);
+        } else if (userStatus == Status.WANTTOHIRE) {
+          self.setContent("status", Status.IDLE.toString());
+          ((Button) findViewById(R.id.availability)).setText(R.string.look_for_cab);
+        }
       }
-    } else if (userType == UserType.CUSTOMER) {
-      if (userStatus == Status.IDLE) {
-        self.setContent("status", Status.WANTTOHIRE.toString());
-        ((Button) findViewById(R.id.availability)).setText(R.string.stop_looking_for_cab);
-      } else if (userStatus == Status.WANTTOHIRE) {
-        self.setContent("status", Status.IDLE.toString());
-        ((Button) findViewById(R.id.availability)).setText(R.string.look_for_cab);
-      }
+      self.save();
     }
-    self.save();
   }
 
   public void manageRideProposal(final RideAction action) throws JSONException {
@@ -177,7 +172,6 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
       currentRide.getContent().remove("_source");
     }
     currentRide.setContent("status", action.toString().toLowerCase());
-    Log.e("e", "### saving: " + currentRide.toString());
     currentRide.save(new KuzzleResponseListener<KuzzleDocument>() {
       @Override
       public void onSuccess(KuzzleDocument document) {
@@ -192,9 +186,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
             handler.post(new Runnable() {
               @Override
               public void run() {
-                findViewById(R.id.gif).setVisibility(View.VISIBLE);
-                findViewById(R.id.availability).setVisibility(View.INVISIBLE);
-                ((WebView) findViewById(R.id.gif)).loadUrl("file:///android_asset/gif.html");
+                startRide();
               }
             });
             break;
@@ -208,20 +200,20 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
             handler.post(new Runnable() {
               @Override
               public void run() {
-                findViewById(R.id.gif).setVisibility(View.GONE);
-                findViewById(R.id.availability).setVisibility(View.VISIBLE);
+                stopRide();
               }
             });
             currentRide.delete();
             try {
               self.setContent("status", Status.IDLE);
+              self.save();
               handler.post(new Runnable() {
                 @Override
                 public void run() {
-                  try {
-                    changeUserStatus();
-                  } catch (JSONException e) {
-                    e.printStackTrace();
+                  if (userType == UserType.CAB) {
+                    ((Button) findViewById(R.id.availability)).setText(R.string.look_for_customers);
+                  } else {
+                    ((Button) findViewById(R.id.availability)).setText(R.string.look_for_cab);
                   }
                 }
               });
@@ -259,9 +251,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
         handler.post(new Runnable() {
           @Override
           public void run() {
-            findViewById(R.id.gif).setVisibility(View.VISIBLE);
-            findViewById(R.id.availability).setVisibility(View.INVISIBLE);
-            ((WebView) findViewById(R.id.gif)).loadUrl("file:///android_asset/gif.html");
+            startRide();
           }
         });
         break;
@@ -271,12 +261,17 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
         handler.post(new Runnable() {
           @Override
           public void run() {
-            findViewById(R.id.gif).setVisibility(View.GONE);
-            findViewById(R.id.availability).setVisibility(View.VISIBLE);
+            stopRide();
+            if (userType == UserType.CAB) {
+              ((Button) findViewById(R.id.availability)).setText(R.string.look_for_customers);
+            } else {
+              ((Button) findViewById(R.id.availability)).setText(R.string.look_for_cab);
+            }
           }
         });
         currentRide.delete();
         self.setContent("status", Status.IDLE);
+        self.save();
         break;
       case CANCELLED:
         // Candidate refused our proposal
@@ -289,9 +284,28 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
           }
         });
         break;
-      }
+    }
   }
 
+  private void startRide() {
+    //findViewById(R.id.map_layout).setVisibility(View.INVISIBLE);
+    View inRide = MapActivity.this.getLayoutInflater().inflate(R.layout.in_ride, null);
+    ((LinearLayout)findViewById(R.id.inridepanel)).addView(inRide);
+    inRide.findViewById(R.id.finishride).setOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View v) {
+        try {
+          manageRideProposal(RideAction.FINISHED);
+        } catch (JSONException e) {
+          e.printStackTrace();
+        }
+      }
+    });
+  }
+
+  private void stopRide() {
+    ((LinearLayout)findViewById(R.id.inridepanel)).removeView(MapActivity.this.getLayoutInflater().inflate(R.layout.in_ride, null));
+  }
 
   private void  publishRideProposal(RideAction action, String candidateId) throws JSONException {
     switch (action) {
@@ -327,13 +341,15 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
 
           @Override
           public void onError(JSONObject error) {
-            Log.e("cabble", "An error occured during the connection to kuzzle: " + error.toString());
+            Log.e("cabble", "An error occured during mapping collection in kuzzle: " + error.toString());
           }
         });
       }
 
       @Override
       public void onError(JSONObject error) {
+        setResult(-1);
+        finish();
         Log.e("cabble", "Error during connection: " + error.toString());
       }
     });
@@ -591,8 +607,9 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
   private void  pushNotification() {
     // Push an android notification when a proposal is received
     NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this)
-              .setSmallIcon(R.drawable.favicon)
-              .setContentText("Go to cabble to see.");
+        .setLargeIcon(BitmapFactory.decodeResource(MapActivity.this.getResources(), R.drawable.icon))
+        .setSmallIcon(R.drawable.favicon)
+        .setContentText("Go to cabble to see.");
     if (userType == UserType.CUSTOMER)
       mBuilder.setContentTitle("A cab is ready to take you !");
     else
@@ -675,7 +692,6 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     kuzzle.dataCollectionFactory(getResources().getString(R.string.cabble_collection_users)).advancedSearch(filter, new KuzzleResponseListener<KuzzleDocumentList>() {
       @Override
       public void onSuccess(KuzzleDocumentList response) {
-        Log.e("cabble## ", response.toString());
         List<KuzzleDocument> hits = response.getDocuments();
         for (int i = 0; i < hits.size(); i++) {
           KuzzleDocument doc = hits.get(i);
@@ -704,7 +720,6 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
 
   private void updateMyPosition(LatLng location) throws JSONException {
     // We moved
-    Log.e("cabble", "we moved " + location.toString());
     JSONObject pos = new JSONObject()
         .put("lat", location.latitude)
         .put("lon", location.longitude);
@@ -765,7 +780,9 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     double lon = Double.parseDouble(MapActivity.this.getResources().getString(R.string.default_lon));
     vicinity = googleMap.addCircle(new CircleOptions()
         .center(new LatLng(lat, lon))
-        .radius(Double.parseDouble(MapActivity.this.getResources().getString(R.string.distance_filter))));
+        .radius(Double.parseDouble(MapActivity.this.getResources().getString(R.string.distance_filter)))
+        .fillColor(Color.argb(60, 27, 133, 113))
+        .strokeWidth(0));
 
     MapController.getSingleton(this).setMapView(googleMap);
     MapController.getSingleton(this).setHandler(handler);
@@ -779,19 +796,17 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
         } catch (JSONException e) {
           e.printStackTrace();
         }
-        return null;
-      }
-
-      @Override
-      public View getInfoContents(final Marker marker) {
         View v = null;
         String id = marker.getSnippet();
         try {
-          JSONObject source = (JSONObject) userList.get(id).getContent("_source");
+          JSONObject source = userList.get(id).getContent();
+          if (source.isNull("status") && source.has("_source")) {
+            source = source.getJSONObject("_source");
+          }
           if (Status.valueOf(source.getString("status").toUpperCase()) == Status.IDLE ||
               UserType.valueOf(source.getString("type").toUpperCase()) == UserType.valueOf(self.getContent("type").toString().toUpperCase())) {
             v = getLayoutInflater().inflate(R.layout.idle_bubble, null);
-            ((TextView) v.findViewById(R.id.userid)).setText(MapActivity.this.userList.get(id).getContent().getString("_id"));
+            ((TextView) v.findViewById(R.id.userid)).setText(MapActivity.this.userList.get(id).getId());
             ((TextView) v.findViewById(R.id.status)).setText(source.getString("status"));
           } else {
             if (userType != UserType.CAB) {
@@ -804,6 +819,11 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
           e.printStackTrace();
         }
         return v;
+      }
+
+      @Override
+      public View getInfoContents(final Marker marker) {
+        return null;
       }
     });
     googleMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {

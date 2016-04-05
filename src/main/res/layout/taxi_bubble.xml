@@ -2,15 +2,17 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:layout_width="wrap_content"
               android:layout_height="wrap_content"
-              android:orientation="horizontal">
+              android:orientation="horizontal"
+              android:background="#393e44">
 
     <Button android:id="@+id/bubble_need_ride"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/askride"
-            android:background="@drawable/radius_button_green"
+            android:background="#24b197"
             android:layout_margin="5dp"
             android:padding="5dp"
-            android:textColor="#ffffff" />
+            android:textColor="#ffffff"
+            android:textAllCaps="false"/>
 
 </LinearLayout>
