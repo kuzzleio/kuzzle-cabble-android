@@ -1,49 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
-    android:layout_height="fill_parent">
+    android:layout_height="fill_parent"
+    android:orientation="vertical"
+              android:background="@drawable/city_lights_phone80">
 
-    <Button
+    <ImageView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="I am a cab"
+        android:id="@+id/imageView2"
+        android:src="@drawable/cabble_logo"
+        />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/iamacab"
         android:id="@+id/cab_btn"
-        android:layout_marginTop="196dp"
         android:layout_alignParentTop="true"
         android:layout_alignLeft="@+id/traveler_btn"
         android:layout_alignStart="@+id/traveler_btn"
-        android:background="@drawable/radius_button_orange" />
+        android:background="#ffc107"
+        android:textColor="#ffffff"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:textStyle="bold"
+        android:textAllCaps="false"
+        android:textSize="18dp"
+        android:paddingBottom="20dp"
+        android:paddingTop="20dp"/>
 
     <Button
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="I need a cab"
+        android:text="@string/iamlookingforcab"
         android:id="@+id/traveler_btn"
         android:layout_centerVertical="true"
         android:layout_centerHorizontal="true"
-        android:background="@drawable/radius_button_blue"/>
+        android:background="#24b197"
+        android:textColor="#ffffff"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:textStyle="bold"
+        android:textAllCaps="false"
+        android:textSize="18dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="20dp"
+        android:layout_marginTop="20dp"/>
 
-    <EditText
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/kuzzle_host"
-        android:layout_above="@+id/traveler_btn"
-        android:layout_marginBottom="83dp"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:text="http://192.168.1.127:7512"/>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceLarge"
-        android:text="Kuzzle host:"
-        android:id="@+id/textView3"
-        android:layout_above="@+id/kuzzle_host"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true"/>
-</RelativeLayout>
+</LinearLayout>

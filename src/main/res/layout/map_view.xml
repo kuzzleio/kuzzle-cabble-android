@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                android:layout_width="fill_parent"
-                android:layout_height="fill_parent"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:orientation="vertical" >
 
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:visibility="gone"
+        android:visibility="visible"
         android:id="@+id/inridepanel">
 
         <LinearLayout
@@ -16,14 +16,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center" >
-
-            <Button
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Finish ride"
-                android:id="@+id/finishride"
-                android:background="@drawable/radius_button_green"
-                android:layout_marginRight="10dp" />
 
         </LinearLayout>
 
@@ -34,14 +26,19 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:visibility="gone"
-        android:id="@+id/notification">
+        android:id="@+id/notification"
+        android:background="#393e44">
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text=""
             android:id="@+id/notification_text"
-            android:gravity="center" />
+            android:gravity="center"
+            android:textColor="#ffffff"
+            android:layout_marginBottom="10dp"
+            android:layout_marginTop="10dp"
+            android:textSize="16dp"
+            android:visibility="visible"/>
 
         <LinearLayout
             android:orientation="horizontal"
@@ -54,23 +51,37 @@
                 android:layout_height="wrap_content"
                 android:text="Accept"
                 android:id="@+id/acceptride"
-                android:background="@drawable/radius_button_green"
-                android:layout_marginRight="10dp" />
+                android:background="#ffc107"
+                android:layout_marginRight="5dp"
+                android:textAllCaps="false"
+                android:layout_marginBottom="5dp"
+                android:textSize="18dp"
+                android:paddingRight="40dp"
+                android:paddingLeft="40dp"
+                android:textStyle="bold"/>
 
             <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Decline"
                 android:id="@+id/declineride"
-                android:background="@drawable/radius_button_red"
-                android:layout_marginLeft="10dp" />
+                android:background="#24b197"
+                android:layout_marginLeft="5dp"
+                android:textAllCaps="false"
+                android:layout_marginBottom="5dp"
+                android:textSize="18dp"
+                android:paddingRight="40dp"
+                android:paddingLeft="40dp"
+                android:textStyle="bold"/>
         </LinearLayout>
 
     </LinearLayout>
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:visibility="visible"
+        android:id="@+id/map_layout">
 
         <fragment
             xmlns:android="http://schemas.android.com/apk/res/android"
@@ -79,20 +90,19 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
 
-        <WebView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:id="@+id/gif"
-            android:visibility="invisible"/>
-
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/availability"
             android:layout_alignParentBottom="true"
             android:layout_centerHorizontal="true"
-            android:background="@drawable/blue_button"
-            android:textColor="#FFFFFF"/>
+            android:background="#12594c"
+            android:textColor="#FFFFFF"
+            android:layout_marginBottom="10dp"
+            android:paddingLeft="20dp"
+            android:paddingRight="20dp"
+            android:textAllCaps="false"
+            android:textSize="16dp" />
 
         <ImageView
             android:layout_width="wrap_content"

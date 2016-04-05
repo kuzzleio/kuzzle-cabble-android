@@ -3,7 +3,7 @@
               android:layout_width="wrap_content"
               android:layout_height="wrap_content"
               android:orientation="vertical"
-    >
+              android:background="#393e44">
 
 
     <LinearLayout
@@ -19,13 +19,15 @@
             android:text="User # "
             android:id="@+id/textView"
             android:layout_gravity="center"
-            android:textStyle="bold"/>
+            android:textStyle="bold"
+            android:textColor="#ffffff"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceLarge"
-            android:id="@+id/userid"/>
+            android:id="@+id/userid"
+            android:textColor="#ffffff"/>
     </LinearLayout>
 
     <LinearLayout
@@ -39,13 +41,15 @@
             android:textAppearance="?android:attr/textAppearanceLarge"
             android:text="Current status: "
             android:id="@+id/textView2"
-            android:textStyle="bold"/>
+            android:textStyle="bold"
+            android:textColor="#ffffff"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceLarge"
-            android:id="@+id/status"/>
+            android:id="@+id/status"
+            android:textColor="#ffffff"/>
     </LinearLayout>
 
 </LinearLayout>
