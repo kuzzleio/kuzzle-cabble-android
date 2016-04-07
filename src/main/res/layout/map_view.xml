@@ -58,7 +58,8 @@
                 android:textSize="18dp"
                 android:paddingRight="40dp"
                 android:paddingLeft="40dp"
-                android:textStyle="bold"/>
+                android:textStyle="bold"
+                android:textColor="#ffffff"/>
 
             <Button
                 android:layout_width="wrap_content"
@@ -72,7 +73,8 @@
                 android:textSize="18dp"
                 android:paddingRight="40dp"
                 android:paddingLeft="40dp"
-                android:textStyle="bold"/>
+                android:textStyle="bold"
+                android:textColor="#ffffff"/>
         </LinearLayout>
 
     </LinearLayout>

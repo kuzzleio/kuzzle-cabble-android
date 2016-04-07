@@ -48,4 +48,16 @@
         android:paddingBottom="20dp"
         android:layout_marginTop="20dp"/>
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="Powered by Kuzzle"
+        android:id="@+id/textView3"
+        android:gravity="bottom|right"
+        android:textColor="#bdffffff"
+        android:textSize="16dp"
+        android:paddingLeft="20dp"
+        android:paddingRight="20dp"/>
+
 </LinearLayout>
