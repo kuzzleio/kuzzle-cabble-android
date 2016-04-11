@@ -550,11 +550,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     userRoom = userCollection.subscribe(userSubscribeFilter, options, new KuzzleResponseListener<KuzzleNotificationResponse>() {
       @Override
       public void onSuccess(KuzzleNotificationResponse notification) {
-        if (notification.getDocument() != null)
-          Log.e("cabble", "A User moved " + notification.getDocument().toString());
-        else
-          Log.e("cabble", "User out of scope " + notification.getController() + " " + notification.getAction() + " " + notification.getResult());
-        if (notification.getScope() != Scope.OUT && !notification.getAction().equals("delete")) {
+        if (notification.getDocument() != null && !notification.getAction().equals("delete")) {
           if (!notification.getDocument().getId().equals(self.getId())) {
             KuzzleDocument doc = notification.getDocument();
             String userId = doc.getId();
