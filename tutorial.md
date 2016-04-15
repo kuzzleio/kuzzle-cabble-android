@@ -1,6 +1,7 @@
 # Kuzzle - Cabble for android
 
 Cabble is an app enabling customers to find a cab, and cabs to find customers.
+This tutorial will show you how to manipulate ElasticSearch mapping from the Android SDK. Also how to set a vicinity to see near taxi or customer from a location.
 
 **Table of contents**
 
