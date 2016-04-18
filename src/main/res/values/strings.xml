@@ -33,4 +33,6 @@
     <string name="distance_filter">5000</string>
     <string name="kuzzle_host">Kuzzle host</string>
 
+    <string name="desc">Cabble is a demo application showing a use case for <a href="http://kuzzle.io">Kuzzle</a>.</string>
+
 </resources>

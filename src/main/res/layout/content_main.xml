@@ -52,12 +52,12 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:textAppearance="?android:attr/textAppearanceLarge"
-        android:text="Powered by Kuzzle"
-        android:id="@+id/textView3"
-        android:gravity="bottom|right"
+        android:text="@string/desc"
+        android:id="@+id/desc"
         android:textColor="#bdffffff"
-        android:textSize="16dp"
+        android:textSize="18dp"
         android:paddingLeft="20dp"
-        android:paddingRight="20dp"/>
+        android:paddingRight="20dp"
+        android:gravity="bottom" />
 
 </LinearLayout>

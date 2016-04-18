@@ -1,6 +1,8 @@
 package io.kuzzle.demo.demo_android;
 
+import android.Manifest;
 import android.app.NotificationManager;
+import android.content.pm.PackageManager;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.location.Location;
@@ -8,6 +10,7 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
@@ -59,7 +62,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
   private Handler handler = new Handler();
   private SupportMapFragment mapFragment;
 
-  private String  kuzzle_host;
+  private String kuzzle_host;
   private UserType userType;
 
   // Documents
@@ -290,7 +293,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
   private void startRide() {
     //findViewById(R.id.map_layout).setVisibility(View.INVISIBLE);
     View inRide = MapActivity.this.getLayoutInflater().inflate(R.layout.in_ride, null);
-    ((LinearLayout)findViewById(R.id.inridepanel)).addView(inRide);
+    ((LinearLayout) findViewById(R.id.inridepanel)).addView(inRide);
     inRide.findViewById(R.id.finishride).setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View v) {
@@ -304,10 +307,10 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
   }
 
   private void stopRide() {
-    ((LinearLayout)findViewById(R.id.inridepanel)).removeView(MapActivity.this.getLayoutInflater().inflate(R.layout.in_ride, null));
+    ((LinearLayout) findViewById(R.id.inridepanel)).removeView(MapActivity.this.getLayoutInflater().inflate(R.layout.in_ride, null));
   }
 
-  private void  publishRideProposal(RideAction action, String candidateId) throws JSONException {
+  private void publishRideProposal(RideAction action, String candidateId) throws JSONException {
     switch (action) {
       case ASK:
       case PROPOSE:
@@ -376,7 +379,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     }
   }
 
-  private void  prepareMapping(final KuzzleResponseListener<KuzzleDataMapping> listener) {
+  private void prepareMapping(final KuzzleResponseListener<KuzzleDataMapping> listener) {
     kuzzle.listCollections(new KuzzleResponseListener<JSONObject>() {
       @Override
       public void onSuccess(JSONObject object) {
@@ -484,7 +487,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     });
   }
 
-  private JSONObject  getGeoDistanceFilter() throws JSONException {
+  private JSONObject getGeoDistanceFilter() throws JSONException {
     // Make the geo distance filter which will represent our vicinity (5km)
     JSONObject geo_distance = new JSONObject();
     JSONObject filter = new JSONObject();
@@ -556,7 +559,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
             String userId = doc.getId();
             userList.put(userId, notification.getDocument());
             try {
-              JSONObject source = (JSONObject)doc.getContent("_source");
+              JSONObject source = (JSONObject) doc.getContent("_source");
               MapController.getSingleton(MapActivity.this).moveMarker(userId, UserType.valueOf(source.getString("type").toUpperCase()), source.getJSONObject("pos").getDouble("lat"), source.getJSONObject("pos").getDouble("lon"));
               if (Status.valueOf(source.getString("status").toString().toUpperCase()) == Status.TOHIRE ||
                   Status.valueOf(source.getString("status").toString().toUpperCase()) == Status.WANTTOHIRE) {
@@ -600,7 +603,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     });
   }
 
-  private void  pushNotification() {
+  private void pushNotification() {
     // Push an android notification when a proposal is received
     NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this)
         .setLargeIcon(BitmapFactory.decodeResource(MapActivity.this.getResources(), R.drawable.icon))
@@ -611,7 +614,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     else
       mBuilder.setContentTitle("A customer wants a ride !");
     if (mBuilder != null) {
-      mBuilder.setVibrate(new long[] {1000, 1000});
+      mBuilder.setVibrate(new long[]{1000, 1000});
       Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
       mBuilder.setSound(alarmSound);
       NotificationManager mNotifyMgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
@@ -623,7 +626,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
   private void manageRideProposal() {
     // Handle the proposal
     try {
-      final JSONObject source = (JSONObject)currentRide.getContent("_source");
+      final JSONObject source = (JSONObject) currentRide.getContent("_source");
       if (source.getString("from").equals(self.getId()) || !source.getString("status").equals("awaiting")) {
         handler.post(new Runnable() {
           @Override
