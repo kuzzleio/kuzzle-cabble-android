@@ -4,7 +4,7 @@ Cabble demo for android.
 
 Cabble is an app which allow people to find a cab, and cabs to find customer.
 
-This version of cabble uses the kuzzle android SDK version 1.4.6 and is compatible with ([cabble JS](https://github.com/kuzzleio/demo/tree/master/cabble)).
+This version of cabble uses the kuzzle android SDK version 1.0.0-RC2 and is compatible with ([cabble JS](https://github.com/kuzzleio/demo/tree/master/cabble)).
 
 ### Missing
 
