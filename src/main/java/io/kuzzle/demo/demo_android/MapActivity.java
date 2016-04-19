@@ -809,9 +809,9 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
             ((TextView) v.findViewById(R.id.status)).setText(source.getString("status"));
           } else {
             if (userType != UserType.CAB) {
-              v = getLayoutInflater().inflate(R.layout.taxi_bubble, null);
-            } else {
               v = getLayoutInflater().inflate(R.layout.customer_bubble, null);
+            } else {
+              v = getLayoutInflater().inflate(R.layout.taxi_bubble, null);
             }
           }
         } catch (JSONException e) {
