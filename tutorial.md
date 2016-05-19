@@ -132,7 +132,7 @@ userRoom = userCollection.subscribe(userSubscribeFilter, options, new ResponseLi
   ...
 ```
 
-We also need to set a geo spatial filter ([MapActivity.java:427](https://github.com/kuzzleio/kuzzle-cabble-android/blob/master/src/main/java/io/kuzzle/demo/demo_android/MapActivity.java#L427)), you can relate to [this tutorial](https://github.com/kuzzleio/demo/blob/master/cabble/tutorial.geospacial.md) to know more.
+We also need to set a geo spatial filter ([MapActivity.java:427](https://github.com/kuzzleio/kuzzle-cabble-android/blob/master/src/main/java/io/kuzzle/demo/demo_android/MapActivity.java#L427)), you can relate to [this tutorial](https://github.com/kuzzleio/demo/blob/master/cabble/tutorial.geospatial.md) to know more.
 ```java
 JSONObject geo_distance = new JSONObject();
 JSONObject filter = new JSONObject();
